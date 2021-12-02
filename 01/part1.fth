@@ -3,9 +3,10 @@ s" ./input" r/o open-file throw constant input
 80 constant inputbuf#
 create inputbuf inputbuf# allot
 
+: parse-number? ( c-addr u -- n ? ) s>number? nip ;
 : next-number ( -- n more? )
   inputbuf inputbuf# input read-line throw
-    if inputbuf swap s>number?
+    if inputbuf swap parse-number?
     else drop false
     then
 ;
