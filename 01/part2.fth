@@ -1,13 +1,14 @@
+include ../utils.fth
+
 s" ./input" r/o open-file throw constant input
 
 80 constant inputbuf#
 create inputbuf inputbuf# allot
 
-: parse-number? ( c-addr u -- n ? ) s>number? nip ;
-: next-number ( -- n more? )
+: next-number ( -- n -1 | 0 )
   inputbuf inputbuf# input read-line throw
     if inputbuf swap parse-number?
-    else drop false
+    else false
     then
 ;
 
