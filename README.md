@@ -8,6 +8,6 @@ I'm following a self-imposed challenge to run this year's challenge using my own
 
 ## Running the code
 
-TODO: the interpreter is not ready to push
+The Forth interpreter lives at https://github.com/SupernaviX/forsm.
 
 `wasmer path/to/forsm.wasm --mapdir=.:path/to/forsm --mapdir=aoc:. aoc/01/part1.fth`
