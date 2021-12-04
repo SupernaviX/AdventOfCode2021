@@ -59,6 +59,14 @@ end-struct buf
   dup buf.data @ over buf.length @ + -rot \ track return address
   buf.length +!
 ;
+: remove-buf-region ( start length buf -- )
+  >r
+  r@ buf.data @ rot + ( length dest )
+  2dup + swap ( length src dest )
+  over r@ buf.data @ r@ buf.length @ + swap - ( length src dest u )
+  move
+  negate r> buf.length +! \ shrink the length
+;
 : buf>size ( buf -- u )
   buf.length @
 ;
@@ -78,6 +86,11 @@ end-struct vec
 : destroy-vec ( address -- ) destroy-buf ;
 : append-vec-item ( vec -- address )
   dup vec.itemsize @ swap reserve-buf-space
+;
+: remove-vec-item ( i vec -- )
+  tuck vec.itemsize @ * ( vec start )
+  over vec.itemsize @ rot ( start length vec )
+  vec.buf remove-buf-region
 ;
 : vec>size ( vec -- u )
   dup buf>size swap vec.itemsize @ /
