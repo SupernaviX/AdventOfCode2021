@@ -1,4 +1,4 @@
-256 constant inputbuf#
+512 constant inputbuf#
 create inputbuf inputbuf# allot
 
 variable input
@@ -8,10 +8,15 @@ variable input
 ;
 : close-input ( -- ) input @ close-file throw ;
 
-: next-line ( -- c-addr u -1 | 0 )
+: next-line? ( -- c-addr u -1 | 0 )
   inputbuf inputbuf# input @ read-line throw
     if inputbuf swap true
     else drop false
+    then
+;
+: next-line
+  next-line? =0
+    if ." Missing line " 411 throw
     then
 ;
 
@@ -45,7 +50,7 @@ end-struct buf
   begin 2dup >
   while
     2* \ double the capacity until we reach/exceed the target
-    dup r@ buf.data @ resize throw r@ buf.data !
+    dup r@ buf.data @ swap resize throw r@ buf.data !
   repeat
   r> buf.capacity ! drop
 ;
@@ -53,6 +58,12 @@ end-struct buf
   2dup buf.length @ + over grow-buf
   dup buf.data @ over buf.length @ + -rot \ track return address
   buf.length +!
+;
+: buf>size ( buf -- u )
+  buf.length @
+;
+: buf[] ( i buf -- address )
+  buf.data @ +
 ;
 
 struct
@@ -69,9 +80,9 @@ end-struct vec
   dup vec.itemsize @ swap reserve-buf-space
 ;
 : vec>size ( vec -- u )
-  dup vec.itemsize @ swap buf.length @ *
+  dup buf>size swap vec.itemsize @ /
 ;
 : vec[] ( i vec -- address )
   dup vec.itemsize @ rot *
-  swap buf.data @ +
+  swap buf[]
 ;

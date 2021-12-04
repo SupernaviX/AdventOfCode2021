@@ -6,7 +6,7 @@ variable items
 : count-items ( -- n )
   0 items !
   open-input
-  begin next-line
+  begin next-line?
   while 1 items +! 2drop
   repeat
   close-input
@@ -19,7 +19,7 @@ items @ array is-candidate?
 : populate-ratings ( -- )
   open-input
   items @ 0 do
-    next-line =0 if 1337 throw then
+    next-line
     binary parse-number decimal i ratings !
   loop
   close-input

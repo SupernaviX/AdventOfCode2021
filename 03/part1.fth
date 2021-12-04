@@ -18,7 +18,7 @@ variable items
 
 : process-input ( -- )
   open-input
-  begin next-line
+  begin next-line?
   while
     1 items +!
     count-1s
