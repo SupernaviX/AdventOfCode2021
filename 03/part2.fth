@@ -1,22 +1,5 @@
 include ../utils.fth
 
-variable input
-: open-input
-  s" ./input" r/o open-file throw input !
-;
-: close-input input @ close-file throw ;
-
-
-80 constant inputbuf#
-create inputbuf inputbuf# allot
-
-: next-line ( -- c-addr u -1 | 0 )
-  inputbuf inputbuf# input @ read-line throw
-    if inputbuf swap true
-    else drop false
-    then
-;
-
 12 constant digits
 
 variable items
