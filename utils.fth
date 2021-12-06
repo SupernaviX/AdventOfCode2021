@@ -42,6 +42,11 @@ end-struct buf
   0 over buf.length !
   buf.capacity !
 ;
+: init-zeroed-buf ( length address -- )
+  2dup init-buf
+  2dup buf.length !
+  buf.data @ swap 0 fill
+;
 : destroy-buf ( buf -- )
   buf.data @ free throw
 ;
