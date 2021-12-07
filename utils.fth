@@ -1,4 +1,4 @@
-512 constant inputbuf#
+1024 constant inputbuf#
 create inputbuf inputbuf# allot
 
 variable input
@@ -30,6 +30,10 @@ variable input
 : array ( n -- )
   create cells allot 
   does> ( i -- addr ) swap cells +
+;
+: 2array ( n -- )
+  create 2* cells allot
+  does> ( i -- addr ) swap 2* cells +
 ;
 
 struct
