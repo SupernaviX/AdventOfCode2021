@@ -1,4 +1,4 @@
-1024 constant inputbuf#
+4096 constant inputbuf#
 create inputbuf inputbuf# allot
 
 variable input
@@ -107,4 +107,49 @@ end-struct vec
 : vec[] ( i vec -- address )
   dup vec.itemsize @ rot *
   swap buf[]
+;
+
+\ quicksort
+variable sortee
+variable sortee-len
+: sortee[] ( i -- addr ) cells sortee @ + ;
+
+: swap-cells ( i1 i2 -- )
+  sortee[] swap sortee[] swap
+  over @ swap ( addr1 v1 addr2 )
+  dup @ -rot ( addr1 v2 v1 addr2 )
+  ! swap !
+;
+
+: partition-cells ( lo hi -- midpoint )
+  2dup + 2/ sortee[] @ >r \ track the partition value
+  1+ swap 1- swap
+  begin
+    1- begin dup sortee[] @ r@ > while 1- repeat \ move hi down
+    swap
+    1+ begin dup sortee[] @ r@ < while 1+ repeat \ move lo up
+    swap
+    2dup >= \ if hi and lo have crossed
+      if r> drop nip exit \ return hi
+      then
+    2dup swap-cells \ otherwise swap em
+  again
+;
+
+: quicksort-cells ( lo hi -- )
+  over <0
+  \ over sortee-len @ >= or
+  >r 2dup >= r> or
+    if 2drop \ only continue if 0 <= lo < hi < len
+    else
+      2dup partition-cells ( lo hi p )
+      tuck 2swap recurse \ sort lo..p
+      1+ swap recurse \ sort p+1..hi
+    then 
+;
+
+: sort-cells ( array cells -- )
+  swap sortee !
+  dup sortee-len !
+  0 swap 1- quicksort-cells
 ;
