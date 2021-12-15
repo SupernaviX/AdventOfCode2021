@@ -153,3 +153,8 @@ variable sortee-len
   dup sortee-len !
   0 swap 1- quicksort-cells
 ;
+
+: 2+! ( d addr -- )
+  dup >r
+  2@ d+ r> 2!
+;
