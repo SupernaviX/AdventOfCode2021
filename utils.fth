@@ -96,6 +96,10 @@ end-struct vec
 : append-vec-item ( vec -- address )
   dup vec.itemsize @ swap reserve-buf-space
 ;
+: pop-vec-item ( vec -- address )
+  dup buf>size over vec.itemsize @ - over buf[] swap \ get address to return
+  dup vec.itemsize @ negate swap buf.length +! \ and shrink it
+;
 : remove-vec-item ( i vec -- )
   tuck vec.itemsize @ * ( vec start )
   over vec.itemsize @ rot ( start length vec )
