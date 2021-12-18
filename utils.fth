@@ -54,6 +54,9 @@ end-struct buf
 : destroy-buf ( buf -- )
   buf.data @ free throw
 ;
+: clear-buf ( buf -- )
+  0 swap buf.length !
+;
 : grow-buf ( target-capacity buf -- )
   >r r@ buf.capacity @ ( target-cap current-cap )
   begin 2dup >
@@ -67,6 +70,14 @@ end-struct buf
   2dup buf.length @ + over grow-buf
   dup buf.data @ over buf.length @ + -rot \ track return address
   buf.length +!
+;
+: insert-buf-region ( start length buf -- address )
+  >r over r> dup buf.length @ rot - >r \ track how many items to move later
+  2dup buf.length @ + over grow-buf \ ensure we have enough space
+  2dup buf.length +! \ update the buf length
+  rot swap buf.data @ + ( length region-start )
+  tuck tuck + ( region-start region-start region-end )
+  r> move \ move the old region contents, return the new region address
 ;
 : remove-buf-region ( start length buf -- )
   >r
@@ -93,12 +104,19 @@ end-struct vec
   vec.itemsize !
 ;
 : destroy-vec ( address -- ) destroy-buf ;
+: clear-vec ( vec -- ) clear-buf ;
 : append-vec-item ( vec -- address )
   dup vec.itemsize @ swap reserve-buf-space
 ;
+: push-vec-item ( vec -- address ) append-vec-item ;
 : pop-vec-item ( vec -- address )
   dup buf>size over vec.itemsize @ - over buf[] swap \ get address to return
   dup vec.itemsize @ negate swap buf.length +! \ and shrink it
+;
+: insert-vec-item ( i vec -- addr )
+  tuck vec.itemsize @ * ( vec start )
+  over vec.itemsize @ rot ( start length vec )
+  vec.buf insert-buf-region
 ;
 : remove-vec-item ( i vec -- )
   tuck vec.itemsize @ * ( vec start )
