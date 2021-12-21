@@ -135,26 +135,46 @@ end-struct vec
 variable sortee
 variable sortee-len
 : sortee[] ( i -- addr ) cells sortee @ + ;
+variable comparator
+: run-comparator ( c1 c2 -- n ) comparator @ execute ;
 
-: swap-cells ( i1 i2 -- )
-  sortee[] swap sortee[] swap
+: compare-cells ( c1 c2 -- n )
+  2dup < -rot > -
+;
+
+: swap-cells ( addr1 addr2 -- )
   over @ swap ( addr1 v1 addr2 )
   dup @ -rot ( addr1 v2 v1 addr2 )
   ! swap !
+;
+
+\ whatever was written in addr1 will now be in addr2
+: swap-addresses ( addr1 addr2 size -- )
+  dup 3 and if ." Please only swap cell-aligned addresses :\ " cr 520 throw then
+  2/ 2/ 0 ?do
+    2dup swap-cells
+    cell + swap cell + swap
+  loop
+  2drop
+;
+
+: swap-cells-at-index ( i1 i2 -- )
+  sortee[] swap sortee[] swap
+  swap-cells
 ;
 
 : partition-cells ( lo hi -- midpoint )
   2dup + 2/ sortee[] @ >r \ track the partition value
   1+ swap 1- swap
   begin
-    1- begin dup sortee[] @ r@ > while 1- repeat \ move hi down
+    1- begin dup sortee[] @ r@ run-comparator 0 > while 1- repeat \ move hi down
     swap
-    1+ begin dup sortee[] @ r@ < while 1+ repeat \ move lo up
+    1+ begin dup sortee[] @ r@ run-comparator 0 < while 1+ repeat \ move lo up
     swap
     2dup >= \ if hi and lo have crossed
       if r> drop nip exit \ return hi
       then
-    2dup swap-cells \ otherwise swap em
+    2dup swap-cells-at-index \ otherwise swap em
   again
 ;
 
@@ -171,6 +191,14 @@ variable sortee-len
 ;
 
 : sort-cells ( array cells -- )
+  ['] compare-cells comparator !
+  swap sortee !
+  dup sortee-len !
+  0 swap 1- quicksort-cells
+;
+
+: sort-cells-by ( array cells xt -- )
+  comparator !
   swap sortee !
   dup sortee-len !
   0 swap 1- quicksort-cells
@@ -179,4 +207,82 @@ variable sortee-len
 : 2+! ( d addr -- )
   dup >r
   2@ d+ r> 2!
+;
+
+struct
+  vec field heap.vec
+  cell field heap.priorityfunc
+end-struct heap
+
+: heap-swap ( child-i parent-i heap -- )
+  >r
+  r@ vec[] swap r@ vec[] swap
+  r> vec.itemsize @ swap-addresses
+;
+
+: heap-priority[]@ ( index heap -- u )
+  tuck vec[] swap heap.priorityfunc @ execute
+;
+
+: heap-swap? ( child-i parent-i heap )
+  >r
+  2dup swap r@ heap-priority[]@ rot r@ heap-priority[]@ d<
+    if r@ heap-swap true
+    else 2drop false
+    then
+  r> drop
+;
+
+: init-heap ( itemsize priority address -- )
+  tuck heap.priorityfunc ! init-vec
+;
+: destroy-heap ( address -- )
+  destroy-vec
+;
+: push-heap-item-start ( heap -- address )
+  append-vec-item
+;
+: push-heap-item-done ( heap -- )
+  >r
+  r@ vec>size 1-
+  begin ?dup
+  while
+    dup 1- 2/ \ get parent index
+    2dup r@ heap-swap?
+      if nip
+      else 2drop r> drop exit
+      then
+  repeat
+  r> drop
+;
+
+: heap-min ( i1 i2 heap -- i )
+  >r
+  \ if i2 is bigger than the heap size, just drop it
+  dup r@ vec>size >= if r> 2drop exit then
+  2dup swap r@ heap-priority[]@ rot r@ heap-priority[]@ d<=
+    if drop else nip then
+  r> drop
+;
+
+: preserve-heap-order ( i heap -- )
+  >r
+  dup r@ vec>size >= if r> 2drop exit then
+  dup dup 2* 1+ r@ heap-min
+  over 2* 2 + r@ heap-min ( i imin )
+  2dup <>
+    if tuck r@ heap-swap r> recurse
+    else r> drop 2drop
+    then
+;
+
+: pop-heap ( heap -- address )
+  >r
+  0 r@ vec>size 1- r@ heap-swap \ swap the lowest and highest item
+  r@ vec.itemsize @ negate r@ buf.length +! \ shrink the heap
+  0 r@ preserve-heap-order \ ensure everything left is ordered
+  r@ vec>size r> vec[] \ return one past the old start, where it is stored
+;
+: peek-heap ( heap -- address )
+  0 swap vec[]
 ;
