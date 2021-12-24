@@ -126,6 +126,11 @@ end-struct vec
 : vec>size ( vec -- u )
   dup buf>size swap vec.itemsize @ /
 ;
+: remove-vec-items ( istart count vec -- )
+  rot over vec.itemsize @ * ( count vec start )
+  -rot swap over vec.itemsize @ * swap ( start length vec )
+  vec.buf remove-buf-region
+;
 : vec[] ( i vec -- address )
   dup vec.itemsize @ rot *
   swap buf[]
