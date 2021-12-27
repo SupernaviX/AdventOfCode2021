@@ -291,3 +291,62 @@ end-struct heap
 : peek-heap ( heap -- address )
   0 swap vec[]
 ;
+
+struct
+  vec field hashset.indices
+  vec field hashset.items
+  cell field hashset.hashfunc
+  cell field hashset.eqfunc
+end-struct hashset
+: init-hashset ( hashfunc eqfunc itemsize address -- )
+  tuck hashset.items init-vec
+  cell over hashset.indices init-vec
+  tuck hashset.eqfunc !
+  tuck hashset.hashfunc !
+  \ init a fixed pool for indices
+  hashset.indices
+  1024 1024 * tuck cells swap reserve-buf-space
+  swap 0 do
+    -1 over !
+    cell +
+  loop
+  drop
+;
+: destroy-hashset ( address -- )
+  dup hashset.indices destroy-vec
+  hashset.items destroy-vec
+;
+: hashset>internalsize ( hashset -- u ) hashset.indices vec>size ;
+: hashset-hashof ( item hashset -- u )
+  dup hashset>internalsize -rot hashset.hashfunc @ execute swap 1- and
+;
+: save-hashset-item ( item hashset -- index )
+  hashset.items
+  dup vec>size -rot \ return value
+  dup vec.itemsize @ -rot \ track itemsize for later
+  push-vec-item rot move
+;
+: try-add-hashset-item ( item index hashset -- added? done? )
+  2dup hashset.indices vec[] @ -1 = if
+    >r
+    swap r@ save-hashset-item ( indexindex itemindex )
+    swap r> hashset.indices vec[] !
+    true true exit
+  then
+  tuck hashset.indices vec[] @ over hashset.items vec[] ( item hashset existingitem )
+  swap hashset.eqfunc @ execute \ we are done if we found an item equal to what we want
+  false swap \ we are not adding this to the set
+;
+: add-hashset-item ( item hashset -- added? )
+  2dup hashset-hashof
+  2dup swap hashset>internalsize + swap do ( item hashset )
+    2dup i over hashset>internalsize 1- and swap ( item hashset item index hashset )
+    try-add-hashset-item ( item index added? done? )
+      if nip nip unloop exit
+      else drop
+      then
+  loop
+;
+
+: hash+ ( hash c -- hash ) swap 37 * + ;
+: dhash+ ( hash d -- hash ) rot 37 * + 37 * + ;
